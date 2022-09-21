@@ -51,17 +51,11 @@ def connect_to_wifi():
     print(f'    Connected to \'{WLAN_SSID}\' with address {wlan.ifconfig()[0]}')
 
 
-def display_boot_screen():
-    print('* Hello world!\n    Clearing the display...')
-    
-    # Blink LED at 10Hz in init stage
-    led_timer.init(freq=10, mode=Timer.PERIODIC, callback=blink_led)
+# Begin initialisation
+print('* Hello world!')
 
-    # Clear the display and show a loading thing
-    # TODO
-
-# Display a boot screen to indicate device powered on
-display_boot_screen()
+# Blink LED at 10Hz in init stage
+led_timer.init(freq=10, mode=Timer.PERIODIC, callback=blink_led)
 
 # Set device country to GB so that the wireless radio
 # uses UK-approved network channels
