@@ -1,12 +1,12 @@
 """badgeboy digital name badge logic for the Raspberry Pi Pico W
 
-Software for the Pico W used in the digital name badge project for the Festival of Ideas
-2022. This should run when the Pico receives power but only after executing any './boot.py' file
-first.
+    Software for the Pico W used in the digital name badge project for the Festival of Ideas
+    2022. This should run when the Pico receives power but only after executing any './boot.py' file
+    first.
 
-This requires the MicroPython binaries to be loaded onto the Pico already.
+    This requires the MicroPython binaries to be loaded onto the Pico already.
 
-by Matt Hall
+    by Matt Hall
 
 """
 from machine import Pin, Timer
