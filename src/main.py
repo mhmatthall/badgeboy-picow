@@ -17,6 +17,12 @@ import ujson
 import ubinascii
 import urequests as req
 
+# Import whatever driver file is present
+try:
+    from display_driver_BWR import DisplayDriver
+except:
+    from display_driver_BW import DisplayDriver
+
 WLAN_SSID = 'Badge City'
 WLAN_PW = 'ihatecomputers'
 WLAN_SUBNET = '192.168.1'

@@ -1,7 +1,8 @@
-"""Pico-ePaper-2.9-B display driver
+""" Pico-ePaper-2.9-B display driver
+    by Matt Hall
 
     Adapted from 'Pico_ePaper_Code' (https://github.com/waveshare/Pico_ePaper_Code)
-        by: Waveshare team 
+        by: Waveshare team
         version: 1.0 (2021-03-16)
         license: MIT
 """
@@ -11,7 +12,7 @@ import utime
 
 # Display resolution
 EPD_WIDTH = 128
-EPD_HEIGHT = 296 # flash ur dad
+EPD_HEIGHT = 296  # flash ur dad
 
 DC_PIN = 8
 CS_PIN = 9
@@ -20,15 +21,16 @@ CS_PIN = 9
 RST_PIN = 12
 BUSY_PIN = 13
 
-"""Driver class for the Waveshare 2.9" ePaper display for Pico (pico-e-paper-2.9-b)
 """
-class WS_29_B:
+Driver class for the Waveshare 2.9" ePaper display for Pico (pico-e-paper-2.9-b)
+"""
+class DisplayDriver:
     def __init__(self):
         print('  Initialising interfaces...')
         self.reset_pin = Pin(RST_PIN, Pin.OUT)
         self.busy_pin = Pin(BUSY_PIN, Pin.IN, Pin.PULL_UP)
         self.cs_pin = Pin(CS_PIN, Pin.OUT)
-        
+
         self.width = EPD_WIDTH
         self.height = EPD_HEIGHT
 
@@ -80,35 +82,23 @@ class WS_29_B:
         # 1 - default data interval of 10 frames (base-10)
         self.send_data(0x27)
 
-        # TRY to get board revision info to ID type of display module (no workie)
-        # self.send_command(0x70)
-        # rev_rx = self.receive_data(2)
-        # print(f'  Revision: {rev_rx}')
-
-
     def digital_write(self, pin, value):
         pin.value(value)
-
 
     def digital_read(self, pin):
         return pin.value()
 
-
     def delay_ms(self, delaytime):
         utime.sleep(delaytime / 1000.0)
-
 
     def spi_writebyte(self, data):
         self.spi.write(bytearray(data))
 
-
     def spi_read(self, num_bytes):
         return bytearray(self.spi.read(num_bytes))
 
-
     def module_exit(self):
         self.digital_write(self.reset_pin, 0)
-
 
     # Hardware reset
     def hw_reset(self):
@@ -119,20 +109,17 @@ class WS_29_B:
         self.digital_write(self.reset_pin, 1)
         self.delay_ms(50)
 
-
     def send_command(self, command):
         self.digital_write(self.dc_pin, 0)
         self.digital_write(self.cs_pin, 0)
         self.spi_writebyte([command])
         self.digital_write(self.cs_pin, 1)
 
-
     def send_data(self, data):
         self.digital_write(self.dc_pin, 1)
         self.digital_write(self.cs_pin, 0)
         self.spi_writebyte([data])
         self.digital_write(self.cs_pin, 1)
-
 
     def receive_data(self, num_bytes):
         self.digital_write(self.dc_pin, 1)
@@ -141,22 +128,19 @@ class WS_29_B:
         self.digital_write(self.cs_pin, 1)
         return rx
 
-
     def wait_for_display(self):
         print('  Display is busy...')
-        
+
         # Poll status until complete
         while(self.digital_read(self.busy_pin) == 0):
             self.delay_ms(100)
 
         print('    ...done!')
 
-
     def refresh_display(self):
         # Send DRF cmd
         self.send_command(0x12)
         self.wait_for_display()
-
 
     def display(self):
         # Start tx 2 to SRAM (DTM2)
@@ -168,7 +152,6 @@ class WS_29_B:
                 self.send_data(self.buf[i + j * int(self.width / 8)])
 
         self.refresh_display()
-    
 
     def debug_display_lines(self):
         # Start tx 2 to SRAM (DTM2)
@@ -187,7 +170,6 @@ class WS_29_B:
 
         self.refresh_display()
 
-
     def clear_display(self, val_to_write=0xff):
         # Start tx 2 to SRAM (DTM2)
         self.send_command(0x13)
@@ -199,7 +181,6 @@ class WS_29_B:
 
         self.refresh_display()
 
-
     def power_off(self):
         # Send power off cmd
         self.send_command(0x02)
@@ -209,38 +190,34 @@ class WS_29_B:
         self.send_command(0x07)
         self.send_data(0xA5)
 
+# EXAMPLE CODE
+# # Instantiate display
+# print("DEBUG: instantiate")
+# d = DisplayDriver()
 
-# DEBUG CODE
-# DEBUG CODE
-# DEBUG CODE
-# if __name__ == '__main__':
-#     # Instantiate display
-#     print("DEBUG: instantiate")
-#     d = WS_29_B()
+# d.delay_ms(2000)
 
-#     d.delay_ms(2000)
+# print("DEBUG: clear display")
+# d.clear_display()
 
-#     print("DEBUG: clear display")
-#     d.clear_display()
+# d.delay_ms(2000)
 
-#     d.delay_ms(2000)
+# # print("DEBUG: fill buffer with all white")
+# # d.image_buffer.fill(0xff)
 
-#     # print("DEBUG: fill buffer with all white")
-#     # d.image_buffer.fill(0xff)
+# # d.delay_ms(2000)
 
-#     # d.delay_ms(2000)
+# print("DEBUG: display debug pattern")
+# d.debug_display_lines()
 
-#     print("DEBUG: display debug pattern")
-#     d.debug_display_lines()
-    
-#     d.delay_ms(2000)
+# d.delay_ms(2000)
 
-#     # print("DEBUG: push line 1 to buffer")
-#     # d.image_buffer.text("Festival of Ideas", 0, 10, 0x00)
-#     # print("DEBUG: push line 2 to buffer")
-#     # d.image_buffer.text("badgeboy", 0, 40, 0x00)
-#     # print("DEBUG: display buffer contents")
-#     # d.display()
+# # print("DEBUG: push line 1 to buffer")
+# # d.image_buffer.text("Festival of Ideas", 0, 10, 0x00)
+# # print("DEBUG: push line 2 to buffer")
+# # d.image_buffer.text("badgeboy", 0, 40, 0x00)
+# # print("DEBUG: display buffer contents")
+# # d.display()
 
-#     print("Display is powering off...")
-#     d.power_off()
+# print("Display is powering off...")
+# d.power_off()
