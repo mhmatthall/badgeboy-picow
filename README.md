@@ -1,2 +1,7 @@
 # badgeboy-picow
-The digital name badge software for the Festival of Ideas 2022. Currently specific to the Raspberry Pi Pico W.
+Drivers and software for digital name badges for use with [badgeman](https://github.com/mhmatthall/badgeman)
+
+## Supported hardware
+- Raspberry Pi Pico W
+  - with Waveshare Pico-ePaper-2.9 hat (see `display_driver_BW.py`)
+  - with Waveshare Pico-ePaper-2.9-B hat (see `display_driver_BWR.py`)
