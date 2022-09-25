@@ -1,5 +1,5 @@
 # badgeboy-picow
-Drivers and software for digital name badges for use with [badgeman](https://github.com/mhmatthall/badgeman)
+Drivers and software for Raspberry Pi Pico W-based digital name badges for use with [badgeman](https://github.com/mhmatthall/badgeman)
 
 ## Supported hardware
 - Raspberry Pi Pico W
