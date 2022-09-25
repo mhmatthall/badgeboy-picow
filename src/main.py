@@ -1,10 +1,9 @@
-"""badgeboy digital name badge logic for the Raspberry Pi Pico W
+""" badgeboy digital name badge logic for the Raspberry Pi Pico W
 
-    Software for the Pico W used in the digital name badge project for the Festival of Ideas
-    2022. This should run when the Pico receives power but only after executing any './boot.py' file
-    first.
+    Software for the Pico W used in the badgeman digital name badge system. This should run when the
+    Pico receives power but only after executing any './boot.py' file first.
 
-    This requires the MicroPython binaries to be loaded onto the Pico already.
+    This requires that the MicroPython binaries are loaded onto the Pico already.
 
     by Matt Hall
 
@@ -56,7 +55,6 @@ def connect_to_wifi():
     # Log local IP address
     print(f'    Connected to \'{WLAN_SSID}\' with address {wlan.ifconfig()[0]}')
 
-
 # Begin initialisation
 print('* Hello world!')
 
@@ -85,6 +83,9 @@ print(f"* This device's MAC address is {MAC}")
 # Connect to network (WARNING: will infinite loop until connected)
 connect_to_wifi()
 
+# Create and init display unit
+badge = DisplayDriver()
+
 # Main event loop
 while True:
     # Blink LED at 2Hz in main event loop
@@ -112,7 +113,7 @@ while True:
                 BADGE_DATA_CACHE = badge_data
 
                 # Display badge info
-                # TODO
+                badge.display(badge_data.userData.image)
 
         # If not found in DB
         elif poll_request.status_code == 404:
@@ -123,7 +124,7 @@ while True:
                 f'http://{WLAN_SERVER_URL}/api/badges',
                 headers=REQUEST_HEADER,
                 data=ujson.dumps(
-                    { "macAddress":MAC, "name":"", "pronouns":"", "affiliation":"", "message":"", "image":"" }
+                    { "macAddress":MAC }
                 )
             )
 
@@ -132,7 +133,7 @@ while True:
                 print(f'      Successfully created new DB record for badge {MAC}')
 
                 # Display instructions
-                # TODO
+                badge.display(badge_data.userData.image)
 
             else:
                 print(f'      ERROR: Could not create new badge record in DB. API returned status {create_badge_request.status_code}')
