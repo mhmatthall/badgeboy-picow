@@ -9,7 +9,6 @@
 from machine import Pin, SPI
 import framebuf
 import utime
-import ubitstring
 
 # Display resolution (must be portrait)
 DISPLAY_WIDTH = 128
@@ -28,7 +27,7 @@ Driver class for the Waveshare 2.9" ePaper display for Pico (pico-e-paper-2.9-b)
 """
 class DisplayDriver:
     def __init__(self):
-        print('  Initialising interfaces...')
+        print('* Initialising display module interface...')
         self.__reset_pin = Pin(RESET_PIN, Pin.OUT)
         self.__busy_pin = Pin(BUSY_PIN, Pin.IN, Pin.PULL_UP)
         self.__cs_pin = Pin(CS_PIN, Pin.OUT)
@@ -46,7 +45,7 @@ class DisplayDriver:
             self.__buf, self.width, self.height, framebuf.MONO_HLSB
         )
 
-        print('  Initialising display...')
+        print('* Initialising display...')
 
         # Hardware reset
         self.__hw_reset()
@@ -113,13 +112,13 @@ class DisplayDriver:
     def __send_command(self, command):
         self.__digital_write(self.__dc_pin, 0)
         self.__digital_write(self.__cs_pin, 0)
-        self._spi_writebyte([command])
+        self.__spi_writebyte([command])
         self.__digital_write(self.__cs_pin, 1)
 
     def __send_data(self, data):
         self.__digital_write(self.__dc_pin, 1)
         self.__digital_write(self.__cs_pin, 0)
-        self._spi_writebyte([data])
+        self.__spi_writebyte([data])
         self.__digital_write(self.__cs_pin, 1)
 
     def __receive_data(self, num_bytes):
@@ -130,13 +129,13 @@ class DisplayDriver:
         return rx
 
     def __wait_for_display(self):
-        print('  Display is busy...')
+        print('    Rendering...')
 
         # Poll status until complete
         while(self.__digital_read(self.__busy_pin) == 0):
             self.__delay_ms(100)
 
-        print('    ...done!')
+        print('    Rendering complete.')
 
     def __refresh_display(self):
         # Send DRF cmd
@@ -194,59 +193,21 @@ class DisplayDriver:
         self.__send_data(0xA5)
 
     def display(self, image):
-        """ Push an image to the display module and display it. Images are expected to be black and _
-        white (1-bit colour) arrays of pixels the exact size of the display.
+        """ Push an image to the display module and display it. Images are expected to be contiguous
+        hex strings, where each pair of hex values represents 8 pixels to display.
 
-        Args:
-            image (list): A list of integer values that are either:
-                0 for a black pixel
-                1 for a white pixel
+        e.g., '0e' corresponds to the 8 pixel segment: '00001110'
         """
-        # Make one long string of bits
-        binData = ''.join([str(x) for x in image])
-
         # Start tx 2 to SRAM (DTM2)
         self.__send_command(0x13)
 
-        # For every 8 bits in the bitstring
-        for i in range(0, len(binData), 8):
-            # Convert the 8 bits into a 0x00 hex number and send to the display
+        print('* Starting render...')
+
+        # Fetch every two chars in the image and interpret as hex number
+        for i in range(0, len(image), 2):
             self.__send_data(
-                ubitstring.Bits(bin=binData[i:i+8]).hex
+                int(image[i:i+2], 16)
             )
 
         # Refresh screen with new image in SRAM
         self.__refresh_display()
-
-
-# EXAMPLE CODE
-# # Instantiate display
-# print("DEBUG: instantiate")
-# d = DisplayDriver()
-
-# d.__delay_ms(2000)
-
-# print("DEBUG: clear display")
-# d.__clear_display()
-
-# d.__delay_ms(2000)
-
-# # print("DEBUG: fill buffer with all white")
-# # d.__image_buffer.fill(0xff)
-
-# # d.__delay_ms(2000)
-
-# print("DEBUG: display debug pattern")
-# d.__debug_display_lines()
-
-# d.__delay_ms(2000)
-
-# # print("DEBUG: push line 1 to buffer")
-# # d.__image_buffer.text("Festival of Ideas", 0, 10, 0x00)
-# # print("DEBUG: push line 2 to buffer")
-# # d.__image_buffer.text("badgeboy", 0, 40, 0x00)
-# # print("DEBUG: display buffer contents")
-# # d.__display_buffer_img()
-
-# print("Display is powering off...")
-# d.__power_off()

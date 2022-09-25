@@ -31,7 +31,7 @@ WLAN_SERVER_URL = WLAN_SUBNET + '.' + WLAN_SERVER_IP + ':' + WLAN_SERVER_PORT
 
 REQUEST_HEADER = { "Content-Type": "application/json" }
 
-BADGE_DATA_CACHE = ''
+BADGE_DATA_CACHE = {}
 
 # Control onboard LED as a status indicator
 led = Pin('LED', Pin.OUT)
@@ -56,7 +56,7 @@ def connect_to_wifi():
     print(f'    Connected to \'{WLAN_SSID}\' with address {wlan.ifconfig()[0]}')
 
 # Begin initialisation
-print('* Hello world!')
+print('*** badgeboy for the Raspberry Pi Pico W ***')
 
 # Blink LED at 10Hz in init stage
 led_timer.init(freq=10, mode=Timer.PERIODIC, callback=blink_led)
@@ -94,9 +94,9 @@ while True:
     try:
         print('* Polling API...')
 
-        # Poll DB for changes every X seconds
+        # Poll DB for changes
         poll_request = req.get(
-            f'http://{WLAN_SERVER_URL}/api/badges/{MAC}',
+            f'http://{WLAN_SERVER_URL}/api/badges/by-mac/{MAC}',
             headers=REQUEST_HEADER
         )
 
@@ -113,7 +113,7 @@ while True:
                 BADGE_DATA_CACHE = badge_data
 
                 # Display badge info
-                badge.display(badge_data.userData.image)
+                badge.display(badge_data['userData']['image'])
 
         # If not found in DB
         elif poll_request.status_code == 404:
@@ -130,11 +130,27 @@ while True:
 
             # If successful
             if create_badge_request.status_code == 201:
-                print(f'      Successfully created new DB record for badge {MAC}')
+                print(f'      Successfully created new DB record.')
+                print(f'      Retrieving image from server...')
 
-                # Display instructions
-                badge.display(badge_data.userData.image)
+                # Get image from server
+                img_request = req.get(
+                    f'http://{WLAN_SERVER_URL}/api/badges/by-mac/{MAC}',
+                    headers=REQUEST_HEADER
+                )
 
+                if img_request.status_code == 200:
+                    print('      Pushing image to display module...')
+
+                    # Update data cache
+                    BADGE_DATA_CACHE = img_request.json()
+
+                    # Display instructions
+                    badge.display(img_request.json()['userData']['image'])
+                else:
+                    print(f'      ERROR: Could not get badge image from server. API returned status {img_request.status_code}')
+
+                img_request.close()
             else:
                 print(f'      ERROR: Could not create new badge record in DB. API returned status {create_badge_request.status_code}')
             
