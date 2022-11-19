@@ -135,9 +135,10 @@ class DisplayDriver:
     def __wait_for_display(self):
         if DEBUG: print('    Rendering...')
 
-        # Poll status until complete
-        while(self.__digital_read(self.__busy_pin) == 0):
-            self.__delay_ms(100)
+        # Set upper bounds of 120 seconds for display to update
+        for i in range(120):
+            if self.__digital_read(self.__busy_pin) == 1: break
+            self.__delay_ms(1000)
 
         if DEBUG: print('    Rendering complete.')
 
