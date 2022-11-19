@@ -62,6 +62,22 @@ def connect_to_wifi():
     # Log local IP address
     if DEBUG: print(f'    Connected to \'{WLAN_SSID}\' with address {wlan.ifconfig()[0]}')
 
+def load_data_cache():
+    try:
+        with open('./cache.json', 'r') as cache:
+            if DEBUG: print('* Found badge data cache file. Loading...')
+            DISPLAY_DATA_CACHE = ujson.load(cache)
+
+    except:
+        if DEBUG: print('* No badge data cache file found')
+
+def save_data_cache(new_data):
+    # Update local var
+    DISPLAY_DATA_CACHE = new_data
+
+    # Save to cache file
+    with open('./cache.json', 'w') as cache:
+        cache = ujson.dumps(DISPLAY_DATA_CACHE)
 
 # Begin initialisation
 if DEBUG: print('*** badgeboy for the Raspberry Pi Pico W ***')
@@ -118,7 +134,7 @@ while True:
                 led_timer.init(freq=5, mode=Timer.PERIODIC, callback=blink_led)
 
                 # Update data cache
-                BADGE_DATA_CACHE = badge_data
+                save_data_cache(badge_data)
 
                 # Display badge info
                 badge.display(badge_data['userData']['image'])
@@ -154,7 +170,7 @@ while True:
                     if DEBUG: print('      Pushing image to display module...')
 
                     # Update data cache
-                    BADGE_DATA_CACHE = img_request.json()
+                    save_data_cache(img_request.json())
 
                     # Display instructions
                     badge.display(img_request.json()['userData']['image'])
