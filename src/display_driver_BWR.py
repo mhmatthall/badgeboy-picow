@@ -1,5 +1,6 @@
 """ Pico-ePaper-2.9-B display driver
-    by Matt Hall
+        by: Matt Hall
+        version: 0.1
 
     Adapted from 'Pico_ePaper_Code' (https://github.com/waveshare/Pico_ePaper_Code)
         by: Waveshare team
@@ -9,6 +10,9 @@
 from machine import Pin, SPI
 import framebuf
 import utime
+
+# Toggle print debugging
+DEBUG = False
 
 # Display resolution (must be portrait)
 DISPLAY_WIDTH = 128
@@ -27,7 +31,7 @@ Driver class for the Waveshare 2.9" ePaper display for Pico (pico-e-paper-2.9-b)
 """
 class DisplayDriver:
     def __init__(self):
-        print('* Initialising display module interface...')
+        if DEBUG: print('* Initialising display module interface...')
         self.__reset_pin = Pin(RESET_PIN, Pin.OUT)
         self.__busy_pin = Pin(BUSY_PIN, Pin.IN, Pin.PULL_UP)
         self.__cs_pin = Pin(CS_PIN, Pin.OUT)
@@ -45,7 +49,7 @@ class DisplayDriver:
             self.__buf, self.width, self.height, framebuf.MONO_HLSB
         )
 
-        print('* Initialising display...')
+        if DEBUG: print('* Initialising display...')
 
         # Hardware reset
         self.__hw_reset()
@@ -129,13 +133,13 @@ class DisplayDriver:
         return rx
 
     def __wait_for_display(self):
-        print('    Rendering...')
+        if DEBUG: print('    Rendering...')
 
         # Poll status until complete
         while(self.__digital_read(self.__busy_pin) == 0):
             self.__delay_ms(100)
 
-        print('    Rendering complete.')
+        if DEBUG: print('    Rendering complete.')
 
     def __refresh_display(self):
         # Send DRF cmd
@@ -164,10 +168,10 @@ class DisplayDriver:
             # Send in (128 / 8 =) 16B chunks
             for i in range(int(self.width / 8)):
                 if (j % 4) == 0:
-                    print(f'    setting {0x00} at ({i}, {j})')
+                    if DEBUG: print(f'    setting {0x00} at ({i}, {j})')
                     self.__send_data(0x00)
                 else:
-                    print(f'    setting {0xff} at ({i}, {j})')
+                    if DEBUG: print(f'    setting {0xff} at ({i}, {j})')
                     self.__send_data(0xff)
 
         self.__refresh_display()
@@ -178,7 +182,7 @@ class DisplayDriver:
 
         for j in range(self.height):
             for i in range(int(self.width / 8)):
-                print(f'    clearing ({i}, {j})')
+                if DEBUG: print(f'    clearing ({i}, {j})')
                 self.__send_data(val_to_write)
 
         self.__refresh_display()
@@ -201,7 +205,7 @@ class DisplayDriver:
         # Start tx 2 to SRAM (DTM2)
         self.__send_command(0x13)
 
-        print('* Starting render...')
+        if DEBUG: print('* Starting render...')
 
         # Fetch every two chars in the image and interpret as hex number
         for i in range(0, len(image), 2):
