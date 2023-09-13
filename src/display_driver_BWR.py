@@ -11,7 +11,7 @@ from machine import Pin, SPI
 from utime import sleep
 
 # Toggle print debugging
-DEBUG = True
+DEBUG = False
 
 # Display resolution (must be portrait)
 DISPLAY_WIDTH = 128
