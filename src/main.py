@@ -181,7 +181,7 @@ while True:
                     if DEBUG: print('      Pushing image to display module...')
 
                     # Update data cache
-                    save_data_cache(img_request.json())
+                    DISPLAY_DATA_CACHE = img_request.json()
 
                     # Display instructions
                     badge.display(img_request.json()['userData']['image'])
