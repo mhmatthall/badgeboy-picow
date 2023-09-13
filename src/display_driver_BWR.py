@@ -1,6 +1,6 @@
 """ Pico-ePaper-2.9-B display driver
         by: Matt Hall
-        version: 0.2
+        version: 0.3
 
     Adapted from 'Pico_ePaper_Code' (https://github.com/waveshare/Pico_ePaper_Code)
         by: Waveshare team
@@ -11,7 +11,7 @@ from machine import Pin, SPI
 from utime import sleep
 
 # Toggle print debugging
-DEBUG = False
+DEBUG = True
 
 # Display resolution (must be portrait)
 DISPLAY_WIDTH = 128
@@ -32,13 +32,13 @@ class DisplayDriver:
     def __init__(self):
         if DEBUG: print('* Initialising display module interface...')
         # Init pin layout
-        self.__dc_pin = Pin(DC_PIN, Pin.OUT)
         self.__cs_pin = Pin(CS_PIN, Pin.OUT)
         self.__reset_pin = Pin(RESET_PIN, Pin.OUT)
         self.__busy_pin = Pin(BUSY_PIN, Pin.IN, Pin.PULL_UP)
 
         # Init SPI connection
-        self.__spi = SPI(1, baudrate=4_000_000)
+        self.__spi = SPI(1, baudrate=4000000)
+        self.__dc_pin = Pin(DC_PIN, Pin.OUT)
 
         self.width = DISPLAY_WIDTH
         self.height = DISPLAY_HEIGHT
@@ -64,6 +64,9 @@ class DisplayDriver:
         # 1 - booster ON
         # 1 - soft reset DOES NOTHING
         self.__send_data(0x0f)
+        
+        # mystery command
+        self.__send_data(0x89)
         
         # ------------------------------------------------------------
         # RESOLUTION SETTING (TRES)
@@ -135,9 +138,9 @@ class DisplayDriver:
         self.__send_command(0x12)
         self.__wait_for_display()
 
-    def __fill_display(self, val_to_write=0xff):
-        # Start B+W pixel data tx to SRAM (DTM1)
-        self.__send_command(0x10)
+    def __fill_display(self, channel=0x10, val_to_write=0xff):
+        # Start pixel data tx to SRAM (DTM1)
+        self.__send_command(channel)
 
         for j in range(self.height):
             for i in range(int(self.width / 8)):
@@ -155,11 +158,11 @@ class DisplayDriver:
         self.__send_command(0x07)
         self.__send_data(0xA5)
 
-    def debug_display_stripes(self):
+    def debug_display_stripes(self, channel=0x10):
         if DEBUG: print("* DEBUG CMD: STRIPES")
-
-        # Start B+W pixel data tx to SRAM (DTM1)
-        self.__send_command(0x10)
+        
+        # Start pixel data tx to SRAM (DTM1)
+        self.__send_command(channel)
 
         # For each line in the long side
         for j in range(self.height):
@@ -174,14 +177,19 @@ class DisplayDriver:
 
         self.__refresh_display()
 
-    def display(self, image):
+    def display(self, image, channel=0x10):
         """ Push an image to the display module and display it. Images are expected to be contiguous
         hex strings, where each pair of hex values represents 8 pixels to display.
 
         e.g., '0e' corresponds to the 8 pixel segment: '00001110'
+        
+        The image can be displayed in black (0x10) or red (0x13); black is default.
         """
-        # Start B+W pixel data tx to SRAM (DTM1)
-        self.__send_command(0x10)
+        # Wipe SRAM for given colour channel
+        self.__fill_display(channel)
+        
+        # Start pixel data tx to SRAM (DTM1)
+        self.__send_command(channel)
 
         if DEBUG: print('* Starting render...')
 
