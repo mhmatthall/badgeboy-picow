@@ -6,7 +6,7 @@
     This requires that the MicroPython binaries are loaded onto the Pico already.
 
         by: Matt Hall
-        version: 0.1
+        version: 0.2
 
 """
 from machine import Pin, Timer
@@ -18,10 +18,7 @@ import ubinascii
 import urequests as req
 
 # Import whatever driver file is present
-try:
-    from display_driver_BWR import DisplayDriver
-except:
-    from display_driver_BW import DisplayDriver
+from display_driver_BWR import DisplayDriver
 
 # Toggle print debugging
 DEBUG = False
@@ -31,7 +28,7 @@ WLAN_SSID = 'Badge City'
 WLAN_PW = 'ihatecomputers'
 WLAN_SUBNET = '192.168.69'
 WLAN_SERVER_IP = '1'
-WLAN_SERVER_PORT = '3001'
+WLAN_SERVER_PORT = '3000'
 WLAN_SERVER_URL = WLAN_SUBNET + '.' + WLAN_SERVER_IP + ':' + WLAN_SERVER_PORT
 
 REQUEST_HEADER = { "Content-Type": "application/json" }
@@ -66,24 +63,31 @@ def load_data_cache():
     try:
         with open('./cache.json', 'r') as cache:
             if DEBUG: print('* Found badge data cache file. Loading...')
-            DISPLAY_DATA_CACHE = ujson.load(cache)
+            ujson.loads(DISPLAY_DATA_CACHE, cache)
 
     except:
-        if DEBUG: print('* No badge data cache file found')
+        if DEBUG: print('    Error loading cache file (may not exist)')
 
-def save_data_cache(new_data):
+def save_data_cache(new_data):   
     # Update local var
     DISPLAY_DATA_CACHE = new_data
+    
+    # TODO: fix cache saving to file
+    return
+    
+    print("saving cache")
+    print(DISPLAY_DATA_CACHE)
 
     # Save to cache file
     with open('./cache.json', 'w') as cache:
-        cache = ujson.dumps(DISPLAY_DATA_CACHE)
+        ujson.dump(DISPLAY_DATA_CACHE, cache)
 
+# ---------------------------------------
 # Begin initialisation
 if DEBUG: print('*** badgeboy for the Raspberry Pi Pico W ***')
 
-# Blink LED at medium rate in init stage
-led_timer.init(freq=0.5, mode=Timer.PERIODIC, callback=blink_led)
+# Blink LED slowly during init
+led_timer.init(freq=1, mode=Timer.PERIODIC, callback=blink_led)
 
 # Set device country to GB so that the wireless radio
 # uses UK-approved network channels
@@ -108,9 +112,15 @@ if DEBUG: print(f"* This device's MAC address is {MAC}")
 connect_to_wifi()
 
 # Create and init display unit
+if DEBUG: print(f'* Initialising display...')
 badge = DisplayDriver()
 
-# Main event loop
+# Try to load badge data cache
+load_data_cache()
+
+# ---------------------------------------
+# Begin event loop
+
 while True:
     try:
         if DEBUG: print('* Polling API...')
@@ -129,30 +139,31 @@ while True:
             # Only change things when the server data has changed
             if badge_data != DISPLAY_DATA_CACHE:
                 if DEBUG: print('    Display data cache out of date. Refreshing...')
-                
-                # Blink LED at medium rate when refreshing
-                led_timer.init(freq=5, mode=Timer.PERIODIC, callback=blink_led)
+
+                # Blink LED fast to show activity
+                led_timer.init(freq=10, mode=Timer.PERIODIC, callback=blink_led)
 
                 # Update data cache
-                save_data_cache(badge_data)
-
+                DISPLAY_DATA_CACHE = badge_data
+                
+                if DEBUG: print('    Starting image render...')
+                
                 # Display badge info
                 badge.display(badge_data['userData']['image'])
+            else:
+                if DEBUG: print('    No change in badge data.')
 
         # If not found in DB
         elif poll_request.status_code == 404:
             if DEBUG: print('    Badge not found!\n      Inserting blank DB record...')
             
-            # Blink LED at medium rate when not found
-            led_timer.init(freq=5, mode=Timer.PERIODIC, callback=blink_led)
+            # Blink LED fast to show activity
+            led_timer.init(freq=10, mode=Timer.PERIODIC, callback=blink_led)
 
             # Insert blank DB record
             create_badge_request = req.post(
-                f'http://{WLAN_SERVER_URL}/api/badges',
-                headers=REQUEST_HEADER,
-                data=ujson.dumps(
-                    { "macAddress":MAC }
-                )
+                f'http://{WLAN_SERVER_URL}/api/badges/by-mac/{MAC}',
+                headers=REQUEST_HEADER
             )
 
             # If successful
@@ -193,8 +204,8 @@ while True:
     except Exception as err:
         if DEBUG: print(f'    ERROR: Could not complete network request:\n    {err}')
         
-        # Blink LED quickly when errored
-        led_timer.init(freq=10, mode=Timer.PERIODIC, callback=blink_led)
+        # LED on solid when errored
+        led_timer.init(freq=0, mode=Timer.PERIODIC, callback=blink_led)
 
         #  Check if network was to blame
         if wlan.status() < 0 or wlan.status() > 3:
@@ -204,7 +215,10 @@ while True:
 
     if DEBUG: print(f'* Event loop complete. Sleeping for {EVENT_LOOP_SLEEP_TIME} seconds...')
     
-    # Blink LED slowly in main event loop
-    led_timer.init(freq=0.3, mode=Timer.PERIODIC, callback=blink_led)
+    # Blink LED slowly when sleeping
+    led_timer.init(freq=0.5, mode=Timer.PERIODIC, callback=blink_led)
     
     time.sleep(EVENT_LOOP_SLEEP_TIME)
+    
+# ---------------------------------------
+# End event loop
