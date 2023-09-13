@@ -185,8 +185,9 @@ class DisplayDriver:
         
         The image can be displayed in black (0x10) or red (0x13); black is default.
         """
-        # Wipe SRAM for given colour channel
-        self.__fill_display(channel)
+        # Wipe SRAM for both channels
+        self.__fill_display(0x10)
+        self.__fill_display(0x13)
         
         # Start pixel data tx to SRAM (DTM1)
         self.__send_command(channel)
@@ -201,3 +202,4 @@ class DisplayDriver:
 
         # Refresh screen with new image in SRAM
         self.__refresh_display()
+
